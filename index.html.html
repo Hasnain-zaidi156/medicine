@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic — Order System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --teal-dark: #1e3547; --teal-mid: #2a4a5e; --teal-light: #3a6278;
+            --sand-dark: #c8a85a; --sand-pale: #fbf6ee; --sand-light: #f3ecdd; --sand-border: #d9ccb4;
+            --text-dark: #2a2010; --text-mid: #5a4a30; --text-muted: #8a7355;
+            --accent-red: #a32d2d; --white: #ffffff;
+            --page-bg: #e9e1d1; --band: #efe6d4; --hover: #f7efe0;
+            --on-pri: #f0e6d0; --pri-sub: #8bafc4; --on-acc: #2a1800;
+        }
+
+        body {
+            font-family: 'Segoe UI', Georgia, sans-serif;
+            background: var(--page-bg);
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        .container {
+            max-width: 980px; margin: 0 auto; background: var(--sand-pale);
+            border-radius: 14px; border: 1px solid var(--sand-border); overflow: hidden;
+            box-shadow: 0 4px 24px rgba(30, 53, 71, 0.13);
+        }
+
+        /* HEADER */
+        .header { display: flex; background: var(--teal-mid); }
+        .header-main { background: var(--teal-dark); padding: 18px 22px; flex: 1; display: flex; align-items: center; gap: 16px; }
+        .logo-wrap {
+            width: 54px; height: 54px; border-radius: 50%; background: var(--sand-dark);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.15); font-size: 20px; font-weight: 700; color: var(--teal-dark);
+        }
+        .header-main img.logo-img {
+            width: 54px; height: 54px; border-radius: 50%; object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.2); display: block; flex-shrink: 0;
+        }
+        .clinic-title { color: var(--on-pri); font-size: 18px; font-weight: 600; letter-spacing: 0.8px; }
+        .clinic-sub { color: var(--pri-sub); font-size: 12px; margin-top: 3px; }
+        .header-right {
+            background: var(--sand-dark); padding: 18px 22px; text-align: center;
+            display: flex; flex-direction: column; justify-content: center; min-width: 110px;
+        }
+        .header-right .lbl { font-size: 10px; color: var(--on-acc); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .header-right .code { font-size: 24px; color: var(--on-acc); font-weight: 700; display: block; margin-top: 2px; }
+        .set-btn {
+            margin-top: 8px; background: rgba(0, 0, 0, 0.12); border: none; border-radius: 6px;
+            padding: 4px 8px; font-size: 11px; cursor: pointer; color: var(--on-acc); font-family: inherit;
+        }
+        .set-btn:hover { background: rgba(0, 0, 0, 0.22); }
+        .teal-bar { height: 4px; background: var(--teal-dark); }
+
+        /* FORM */
+        .form-section { padding: 18px 22px 14px; background: var(--sand-light); border-bottom: 1px solid var(--sand-border); }
+        .form-section h3 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; font-weight: 600; }
+        .form-grid { display: grid; grid-template-columns: 2.2fr 1.1fr 1fr 1fr; gap: 10px; align-items: end; }
+        .form-grid-bottom { display: grid; grid-template-columns: 0.5fr 1.5fr 1fr; gap: 10px; margin-top: 10px; align-items: end; }
+        .field label { display: block; font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.6px; }
+        .field input, .field select {
+            width: 100%; background: var(--white); border: 1px solid var(--sand-border); border-radius: 8px;
+            padding: 10px 13px; font-size: 14px; color: var(--text-dark); font-family: inherit; outline: none; transition: border-color 0.2s;
+        }
+        .field input:focus, .field select:focus { border-color: var(--teal-light); box-shadow: 0 0 0 3px rgba(42, 74, 94, 0.08); }
+        .auto-class-pill {
+            display: flex; align-items: center; gap: 8px; background: var(--sand-pale); border: 1px solid var(--sand-dark);
+            border-radius: 8px; padding: 10px 13px; font-size: 13px; color: var(--text-mid); min-height: 42px;
+        }
+        .auto-class-pill .cls-tag { background: var(--sand-dark); color: var(--on-acc); border-radius: 5px; padding: 2px 10px; font-size: 13px; font-weight: 700; }
+        .rate-box {
+            display: none; background: #eaf5f0; border: 1px solid #5a9e7a; border-radius: 8px; padding: 10px 13px;
+            font-size: 13px; color: #1a5c3a; font-weight: 600; min-height: 42px; align-items: center;
+        }
+        .add-btn {
+            background: var(--teal-dark); color: var(--on-pri); border: none; border-radius: 8px; padding: 11px 18px;
+            font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; font-family: inherit; letter-spacing: 0.3px; transition: background 0.2s;
+        }
+        .add-btn:hover { background: var(--teal-mid); }
+
+        /* SECTION LABELS */
+        .section-label {
+            display: flex; align-items: center; gap: 8px; padding: 9px 22px; background: var(--band);
+            border-bottom: 1px solid var(--sand-border); font-size: 10px; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;
+        }
+        .section-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sand-dark); flex-shrink: 0; }
+        .section-dot.teal { background: var(--teal-light); }
+
+        /* TABLE */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead tr { background: var(--band); }
+        thead th { padding: 10px 14px; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; text-align: center; border-bottom: 1px solid var(--sand-border); }
+        thead th:first-child { text-align: left; }
+        tbody tr { border-bottom: 0.5px solid var(--sand-border); transition: background 0.15s; }
+        tbody tr:hover { background: var(--hover); }
+        tbody td { padding: 11px 14px; font-size: 13px; color: var(--text-dark); text-align: center; vertical-align: middle; }
+        tbody td:first-child { text-align: left; }
+        .med-name { font-weight: 600; font-size: 14px; color: var(--teal-dark); }
+        .mt-badge { display: inline-block; background: var(--band); color: var(--teal-dark); border-radius: 10px; padding: 1px 8px; font-size: 10px; font-weight: 700; margin-left: 6px; vertical-align: middle; }
+        .cls-badge { display: inline-block; background: var(--sand-dark); color: var(--on-acc); border-radius: 5px; padding: 2px 9px; font-size: 12px; font-weight: 700; }
+        .del-btn { background: transparent; color: var(--accent-red); border: 1px solid rgba(163, 45, 45, 0.3); border-radius: 6px; padding: 4px 11px; font-size: 12px; cursor: pointer; transition: background 0.15s; }
+        .del-btn:hover { background: #fde8e8; }
+        .edit-btn { background: transparent; color: var(--teal-mid); border: 1px solid rgba(42, 74, 94, 0.3); border-radius: 6px; padding: 4px 11px; font-size: 12px; cursor: pointer; transition: background 0.15s; margin-right: 6px; }
+        .edit-btn:hover { background: var(--band); }
+
+        /* TOTALS */
+        .totals-section { padding: 14px 22px 18px; background: var(--sand-light); border-top: 2px solid var(--teal-dark); }
+        .total-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+        .total-row .t-label { font-size: 13px; color: var(--text-muted); }
+        .total-row .t-val { font-size: 14px; color: var(--text-dark); font-weight: 500; }
+        .disc-val { color: var(--accent-red) !important; }
+        .net-row { border-top: 1.5px solid var(--sand-dark); margin-top: 8px; padding-top: 12px; }
+        .net-row .t-label { font-size: 16px; color: var(--teal-dark); font-weight: 700; }
+        .net-row .t-val { font-size: 20px; color: var(--teal-dark); font-weight: 700; }
+
+        .dl-btn {
+            display: block; width: calc(100% - 44px); margin: 16px 22px; background: var(--teal-dark); color: var(--on-pri);
+            border: none; border-radius: 10px; padding: 15px; font-size: 15px; font-weight: 600; cursor: pointer;
+            font-family: inherit; letter-spacing: 0.5px; transition: background 0.2s;
+        }
+        .dl-btn:hover { background: var(--teal-mid); }
+        .footer { text-align: center; padding: 10px 22px 16px; font-size: 11px; color: var(--text-muted); border-top: 0.5px solid var(--sand-border); }
+
+        .loading { display: none; position: fixed; inset: 0; background: rgba(30, 53, 71, 0.7); z-index: 9999; align-items: center; justify-content: center; }
+        .loading.active { display: flex; }
+        .loading-box { background: var(--white); border-radius: 12px; padding: 28px 36px; text-align: center; border-top: 4px solid var(--sand-dark); }
+        .loading-box p { font-size: 15px; color: var(--teal-dark); font-weight: 600; margin-top: 10px; }
+        .spinner { width: 36px; height: 36px; border: 3px solid var(--sand-border); border-top-color: var(--teal-dark); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-row td { text-align: center; padding: 28px; color: var(--text-muted); font-size: 13px; font-style: italic; }
+
+        /* SETTINGS MODAL */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(30, 53, 71, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 12px; }
+        .modal.active { display: flex; }
+        .modal-box { background: #fff; border-radius: 12px; padding: 22px; width: 100%; max-width: 480px; border-top: 4px solid var(--sand-dark); max-height: 92vh; overflow: auto; }
+        .modal-box h3 { color: var(--teal-dark); margin-bottom: 14px; }
+        .modal-box .field { margin-bottom: 12px; }
+        #setLogoPrev { display: none; width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-top: 8px; border: 2px solid var(--sand-border); }
+        .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+
+        /* THEME PICKER */
+        .theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .theme-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; background: #fff; border: 2px solid var(--sand-border); border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 10px; color: var(--text-mid); line-height: 1.2; text-align: center; }
+        .theme-btn .sw { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); }
+        .theme-btn.sel { border-color: var(--teal-dark); background: var(--sand-light); font-weight: 700; color: var(--teal-dark); }
+
+        @media (max-width: 680px) {
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .form-grid-bottom { grid-template-columns: 1fr 1fr; }
+            .header-main { padding: 14px 16px; }
+            .form-section { padding: 14px 16px; }
+            table { font-size: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-box">
+            <h3>Clinic Settings</h3>
+            <div class="field"><label>Clinic Name</label><input type="text" id="setClinic" placeholder="e.g. Zaidi Homeo Clinic"></div>
+            <div class="field"><label>Doctor Name</label><input type="text" id="setDoctor" placeholder="e.g. Dr. Ahmed Khan"></div>
+            <div class="field"><label>Party Code</label><input type="text" id="setCode" placeholder="e.g. 2852"></div>
+            <div class="field"><label>Discount %</label><input type="number" id="setDisc" min="0" max="100"></div>
+            <div class="field"><label>Theme (20)</label><div class="theme-grid" id="themeGrid"></div></div>
+            <div class="field">
+                <label>Logo</label>
+                <input type="file" id="setLogoFile" accept="image/*" onchange="onLogoPick(event)">
+                <img id="setLogoPrev" alt="">
+                <button type="button" class="del-btn" style="margin-top:6px" onclick="removeLogo()">Remove logo</button>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="add-btn" onclick="saveSettings()">Save</button>
+                <button type="button" class="add-btn" style="background:var(--text-muted)" onclick="cancelSettings()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            <p>Generating PDF...</p>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-main">
+                <img class="logo-img" id="logoImg" alt="Logo" style="display:none;">
+                <div class="logo-wrap" id="logoFallback">CL</div>
+                <div>
+                    <div class="clinic-title" id="hdrClinic"></div>
+                    <div class="clinic-sub" id="hdrDoctor"></div>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="lbl">Party Code</span>
+                <span class="code" id="hdrCode"></span>
+                <button type="button" class="set-btn" onclick="openSettings()">⚙ Settings</button>
+            </div>
+        </div>
+        <div class="teal-bar"></div>
+
+        <!-- ORDER FORM (SECTIONS A & B) -->
+        <div class="form-section" id="formAB">
+            <h3>New Order Entry — Sections A &amp; B</h3>
+            <form id="orderForm">
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Medicine Name</label>
+                        <input type="text" id="medName" list="medList" placeholder="Search 1000+ medicines..." required
+                            autocomplete="off" oninput="onMedChange()">
+                        <datalist id="medList"></datalist>
+                    </div>
+                    <div class="field">
+                        <label>Potency / Type</label>
+                        <select id="potency" required onchange="onPotencyChange()">
+                            <option value="" disabled selected>Select potency</option>
+                            <option value="Q">Q — Mother Tincture</option>
+                            <option value="3X">3X</option>
+                            <option value="6X">6X</option>
+                            <option value="12X">12X</option>
+                            <option value="30X">30X</option>
+                            <option value="200X">200X</option>
+                            <option value="3">3</option>
+                            <option value="6">6</option>
+                            <option value="12">12</option>
+                            <option value="30">30</option>
+                            <option value="200">200</option>
+                            <option value="1000">1000</option>
+                            <option value="10M">10M</option>
+                            <option value="50M">50M</option>
+                            <option value="CM">CM</option>
+                            <option value="LM">LM</option>
+                        </select>
+                    </div>
+                    <div class="field" id="classFieldWrap">
+                        <label>Auto-Detected Class</label>
+                        <div class="auto-class-pill" id="classPill">
+                            <span style="color:var(--text-muted); font-size:12px;">— select Q first —</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Packing Size</label>
+                        <select id="size" required onchange="showRate()">
+                            <option value="" disabled selected>Select size</option>
+                            <option value="10ml">10 ml</option>
+                            <option value="30ml">30 ml</option>
+                            <option value="60ml">60 ml</option>
+                            <option value="120ml">120 ml</option>
+                            <option value="500ml">500 ml</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-grid-bottom">
+                    <div class="field">
+                        <label>Quantity</label>
+                        <input type="number" id="qty" value="1" min="1">
+                    </div>
+                    <div class="field">
+                        <label>Rate Preview</label>
+                        <div class="rate-box" id="rateBox">
+                            Rate: Rs. <span id="rateVal">0</span> per bottle
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="add-btn">+ Add to Order List</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- SECTION A -->
+        <div class="section-label">
+            <div class="section-dot"></div>
+            Section A — Mother Tinctures (Q)
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding-left:22px;">Medicine Name</th>
+                        <th>Potency</th>
+                        <th>Class</th>
+                        <th>Qty</th>
+                        <th>Size</th>
+                        <th>Rate (Rs.)</th>
+                        <th>Amount (Rs.)</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="mtBody">
+                    <tr class="empty-row"><td colspan="8">No mother tinctures added yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECTION B -->
+        <div class="section-label" style="margin-top:2px;">
+            <div class="section-dot teal"></div>
+            Section B — Potencies &amp; Dilutions
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding-left:22px;">Medicine Name</th>
+                        <th>Potency</th>
+                        <th>Class</th>
+                        <th>Qty</th>
+                        <th>Size</th>
+                        <th>Rate (Rs.)</th>
+                        <th>Amount (Rs.)</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="potBody">
+                    <tr class="empty-row"><td colspan="8">No potencies added yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECTION C: disabled for now (compounds / BM drops) -->
+
+        <!-- TOTALS -->
+        <div class="totals-section" id="totalsSection" style="display:none;">
+            <div class="total-row">
+                <span class="t-label">Gross Total (Sections A &amp; B)</span>
+                <span class="t-val" id="grossVal">Rs. 0</span>
+            </div>
+            <div class="total-row">
+                <span class="t-label" id="discLbl">Discount</span>
+                <span class="t-val disc-val" id="discVal">− Rs. 0</span>
+            </div>
+            <div class="total-row net-row">
+                <span class="t-label">Net Payable</span>
+                <span class="t-val" id="netVal">Rs. 0</span>
+            </div>
+        </div>
+
+        <button class="dl-btn" onclick="generatePDF()">Download PDF Order Form</button>
+
+        <div class="footer">
+            BM Homoeopathic Pharmaceuticals | Contact: 0321-8431721 | Email: info@bm-hp.com | Website:
+            www.bmhomeopathy.com | Address: BM (Pvt) Limited. 20th KM, Ferozepur Road, Lahore.
+        </div>
+
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════
+        //  CLINIC SETTINGS (saved in browser localStorage)
+        // ═══════════════════════════════════════════
+        const SETTINGS_KEY = 'clinicOrderSettings';
+        let settings = { clinicName: '', doctorName: '', partyCode: '', logo: '', discount: 30, theme: 'classic' };
+        let tempLogo = '';
+
+        // ═══════════════════════════════════════════
+        //  20 THEMES (pri = main dark colour, acc = accent, tint = light surface colour)
+        // ═══════════════════════════════════════════
+        const THEMES = [
+            { id: 'classic',  name: 'Classic Teal Gold', pri: '#1e3547', acc: '#c8a85a', tint: '#efe6d4' },
+            { id: 'emerald',  name: 'Emerald Herbal',    pri: '#0b3d2e', acc: '#d8b45a', tint: '#e4efe8' },
+            { id: 'sapphire', name: 'Royal Sapphire',    pri: '#16336b', acc: '#e3b341', tint: '#e4ebf7' },
+            { id: 'midnight', name: 'Midnight Gold',     pri: '#0f1115', acc: '#d4af37', tint: '#ece9e1' },
+            { id: 'velvet',   name: 'Burgundy Velvet',   pri: '#4a1424', acc: '#d4a15a', tint: '#f2e3e1' },
+            { id: 'ocean',    name: 'Ocean Breeze',      pri: '#0a4f66', acc: '#3cc6c0', tint: '#dff0f3' },
+            { id: 'purple',   name: 'Royal Purple',      pri: '#34235c', acc: '#e0b43c', tint: '#e9e4f4' },
+            { id: 'rose',     name: 'Rose Quartz',       pri: '#7a2342', acc: '#f2aebf', tint: '#f8e6ec' },
+            { id: 'copper',   name: 'Sunset Copper',     pri: '#5a2d1a', acc: '#e8873a', tint: '#f4e5d6' },
+            { id: 'graphite', name: 'Graphite Orange',   pri: '#22252b', acc: '#ff8a2a', tint: '#e9e9ea' },
+            { id: 'sky',      name: 'Sky Clinic',        pri: '#165f95', acc: '#ffb52e', tint: '#e1eff9' },
+            { id: 'mint',     name: 'Mint Wellness',     pri: '#14614f', acc: '#6fd6ae', tint: '#dcf3ea' },
+            { id: 'sand',     name: 'Sandstone Brown',   pri: '#45301f', acc: '#c88a3a', tint: '#f0e4d2' },
+            { id: 'steel',    name: 'Steel Slate',       pri: '#34404f', acc: '#7fb0e0', tint: '#e3e8ee' },
+            { id: 'indigo',   name: 'Indigo Night',      pri: '#232a66', acc: '#8aa9ff', tint: '#e3e6f7' },
+            { id: 'olive',    name: 'Olive Grove',       pri: '#44501c', acc: '#d9ad3c', tint: '#eceed6' },
+            { id: 'coral',    name: 'Teal & Coral',      pri: '#0d4f54', acc: '#ff7a59', tint: '#dcefee' },
+            { id: 'lavender', name: 'Lavender Dream',    pri: '#54447f', acc: '#f0b3d6', tint: '#ede7f6' },
+            { id: 'peach',    name: 'Pine & Peach',      pri: '#1c4a3c', acc: '#f4a77a', tint: '#e3efe9' },
+            { id: 'plum',     name: 'Plum Berry',        pri: '#5b1f4f', acc: '#f0b04a', tint: '#f3e3ef' }
+        ];
+        let T = {};
+        let tempTheme = 'classic';
+
+        function hex2rgb(h) { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
+        function mix(a, b, t) {
+            const x = hex2rgb(a), y = hex2rgb(b);
+            return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
+        }
+        function luma(h) { const [r, g, b] = hex2rgb(h); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; }
+        function themeColors(th) {
+            const W = '#ffffff', K = '#000000';
+            return {
+                pri: th.pri, mid: mix(th.pri, W, 0.12), light: mix(th.pri, W, 0.28), acc: th.acc,
+                onAcc: luma(th.acc) > 0.5 ? '#1d1a12' : '#ffffff',
+                onPri: mix(th.tint, W, 0.55), sub: mix(th.pri, W, 0.6),
+                pale: mix(th.tint, W, 0.7), sandLight: mix(th.tint, W, 0.45), band: th.tint,
+                border: mix(th.tint, K, 0.14), page: mix(th.tint, K, 0.07), hover: mix(th.tint, W, 0.3),
+                text: mix(th.pri, K, 0.55), textMid: mix(th.pri, K, 0.2), muted: mix(th.pri, W, 0.3)
+            };
+        }
+        function applyTheme(id) {
+            const th = THEMES.find(t => t.id === id) || THEMES[0];
+            T = themeColors(th);
+            const r = document.documentElement.style;
+            r.setProperty('--teal-dark', T.pri); r.setProperty('--teal-mid', T.mid); r.setProperty('--teal-light', T.light);
+            r.setProperty('--sand-dark', T.acc); r.setProperty('--sand-pale', T.pale); r.setProperty('--sand-light', T.sandLight);
+            r.setProperty('--sand-border', T.border); r.setProperty('--page-bg', T.page); r.setProperty('--band', T.band);
+            r.setProperty('--hover', T.hover); r.setProperty('--text-dark', T.text); r.setProperty('--text-mid', T.textMid);
+            r.setProperty('--text-muted', T.muted); r.setProperty('--on-pri', T.onPri); r.setProperty('--pri-sub', T.sub);
+            r.setProperty('--on-acc', T.onAcc);
+        }
+        function buildThemeGrid() {
+            document.getElementById('themeGrid').innerHTML = THEMES.map(t =>
+                `<button type="button" class="theme-btn ${t.id === tempTheme ? 'sel' : ''}" onclick="pickTheme('${t.id}')">
+                    <span class="sw" style="background:linear-gradient(135deg, ${t.pri} 50%, ${t.acc} 50%)"></span>${t.name}</button>`).join('');
+        }
+        function pickTheme(id) { tempTheme = id; applyTheme(id); buildThemeGrid(); }
+        function cancelSettings() { applyTheme(settings.theme); closeSettings(); }
+
+
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        function loadSettings() {
+            try { const s = JSON.parse(localStorage.getItem(SETTINGS_KEY)); if (s) settings = { ...settings, ...s }; } catch (e) { }
+        }
+        function initials() {
+            return (settings.clinicName || 'CL').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+        }
+        function applySettings() {
+            applyTheme(settings.theme);
+            document.getElementById('hdrClinic').textContent = (settings.clinicName || 'YOUR CLINIC NAME').toUpperCase();
+            document.getElementById('hdrDoctor').textContent = settings.doctorName;
+            document.getElementById('hdrCode').textContent = settings.partyCode || '—';
+            const img = document.getElementById('logoImg'), fb = document.getElementById('logoFallback');
+            if (settings.logo) { img.src = settings.logo; img.style.display = 'block'; fb.style.display = 'none'; }
+            else { img.style.display = 'none'; fb.style.display = 'flex'; fb.textContent = initials(); }
+            document.title = (settings.clinicName || 'Clinic') + ' — Order System';
+            document.getElementById('discLbl').textContent = settings.discount + '% Discount (Applies to all sections)';
+            updateTotals();
+        }
+        function openSettings() {
+            document.getElementById('setClinic').value = settings.clinicName;
+            document.getElementById('setDoctor').value = settings.doctorName;
+            document.getElementById('setCode').value = settings.partyCode;
+            document.getElementById('setDisc').value = settings.discount;
+            tempLogo = settings.logo;
+            const p = document.getElementById('setLogoPrev');
+            p.src = tempLogo; p.style.display = tempLogo ? 'block' : 'none';
+            tempTheme = settings.theme; buildThemeGrid();
+            document.getElementById('settingsModal').classList.add('active');
+        }
+        function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+        function removeLogo() {
+            tempLogo = '';
+            document.getElementById('setLogoPrev').style.display = 'none';
+            document.getElementById('setLogoFile').value = '';
+        }
+        function onLogoPick(e) {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                const im = new Image();
+                im.onload = () => {
+                    const k = Math.min(1, 300 / Math.max(im.width, im.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+                    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+                    tempLogo = c.toDataURL('image/png');
+                    const p = document.getElementById('setLogoPrev'); p.src = tempLogo; p.style.display = 'block';
+                };
+                im.src = ev.target.result;
+            };
+            r.readAsDataURL(f);
+        }
+        function saveSettings() {
+            settings.clinicName = document.getElementById('setClinic').value.trim();
+            settings.doctorName = document.getElementById('setDoctor').value.trim();
+            settings.partyCode = document.getElementById('setCode').value.trim();
+            const d = parseFloat(document.getElementById('setDisc').value);
+            settings.discount = isNaN(d) ? 0 : Math.min(100, Math.max(0, d));
+            settings.logo = tempLogo; settings.theme = tempTheme;
+            try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+            catch (e) { alert('Settings could not be saved (logo may be too large).'); }
+            applySettings(); closeSettings();
+        }
+
+        // ═══════════════════════════════════════════
+        //  COMPLETE MEDICINE LIST FROM BM (1000+ medicines)
+        // ═══════════════════════════════════════════
+        const allMedicinesList = [
+            "Abel moschus", "Abies alba", "Abies canadensis", "Abies nigra", "Abroma augusta", "Abroma radix", "Abrotanum", "Absinthium", "Acacia arabica", "Acacia concinna", "Acalypha indica", "Acanthus mollis", "Acetanilidum", "Acetylcholine", "Achyranthes aspera", "Achyranthes calea", "Acid aceticum", "Acid benz Potencies", "Acid boricum", "Acid butyricum", "Acid camphoricum", "Acid Carb", "Acid chromicum", "Acid Chryosorb", "Acid citricum", "Acid Fluoric", "Acid formicum", "Acid Gallic", "Acid hippuricum", "Acid Hydrocyanic", "Acid Lacticum", "Acid Mur", "Acid Nitricum", "Acid nitromuriaticum", "Acid Oxalic", "Acid Phos Potencies", "Acid Picric", "Acid salicylicum", "Acid sarcolacticum", "Acid succinicum", "Acid Sulph", "Acid sulphurosum", "Acid tannicum", "Acid tartaricum", "Aconite Nap", "Aconitum Ferox", "Aconitum lycoctonum", "Actaea Spicata", "Adelheidsquelle", "Adonis Vernalis", "Aegle Folia", "Aesculus carnea", "Aesculus glabra", "Aesculus Hipp", "Aethiops antimonialis", "Aethiops mercurialis", "Aethusa Cynapium", "Agaricinum", "Agaricus emeticus", "Agaricus Mus", "Agaricus pantherinus", "Agaricus phalloides", "Agave americana", "Agave tequilana", "Agnus Cast", "Agraphis Nut", "Agrimonia eupatoria", "Agrostemma githago", "Ailanthus glandulosus", "Aletris farinosa", "Alfalfa", "Alisma plantago", "Allium Cepa", "Allium Sat", "Alloxanum", "Alnus glutinosa", "Alnus rubra", "Aloe Socotrina", "Alstonia constricta", "Alstonia Scholar", "Althaea officinalis", "Alumen", "Alumina", "Alumina Silicata", "Aluminium muriaticum", "Ambra Grisea", "Ambrosia artemisiaefolia", "Ammi visnaga", "Ammoniacum gummi", "Ammonium aceticum", "Ammonium Benzoicum", "Ammonium Brom", "Ammonium Carb", "Ammonium Caust", "Ammonium iodatum", "Ammonium Mur", "Ammonium Phos", "Ammonium picricum", "Ammonium tartaricum", "Ammonium valerianicum", "Ammonium vanadium", "Amomum subulatum", "Amoora rohitaka", "Amorphophallus rivieri", "Ampelopsis quinquefolia", "Amygdalus amara", "Amygdalus persica", "Amyl Nit", "Anacardium Occi", "Anacardium Ori", "Anagallis Arv", "Anatherum muricatum", "Andrographis Paniculata", "Anemone nemorosa", "Anemopsis californica", "Angelica archangelica", "Angelica atropurpurea", "Angelica sinensis", "Angophora lanceolata", "Angustura ver", "Anhalonium lewinii", "Anilinum", "Anisum", "Anthemis nobilis", "Anthoxanthum odoratum", "Anthracinum", "Anthrax", "Antim Arsenic", "Antimon Crud", "Antimon Sulph Aur", "Antimonium iodatum", "Antimonium muriaticum", "Antimonium tartaricum", "Apiolum", "Apis Mellifica", "Apium graveolens", "Apocynum", "Apocynum Can", "Aqua marina", "Aquilegia vulgaris", "Aralia hispida", "Aralia Racemosa", "Arbutinum", "Arbutus andrachne", "Areca catechu", "Argemon mexicana", "Argentum cyanatum", "Argentum iodatum", "Argentum Met", "Argentum Mur", "Argentum Nit", "Argentum oxydatum", "Aristolochia clematitis", "Aristolochia milhomens", "Aristolochia serpentaria", "Armoracia sativa", "Arnica Mont", "Arsenic Alb", "Arsenic Iod", "Arsenic Met", "Arsenic Sulf Flav", "Arsenic Sulf Rub", "Arsenicum bromatum", "Arsenicum hydrogenisatum", "Artemisia vulg", "Arum dracontium", "Arum dracunculus", "Arum italicum", "Arum maculatum", "Arum Triphyllum", "Arundo mauritanica", "Asafoetida", "Asarum canadense", "Asarum europaeum", "Asclepias curassavica", "Asclepias incarnata", "Asclepias syriaca", "Asclepias tuberosa", "Asclepias vincetoxicum", "Ashoka Janosia", "Ashwagandha", "Asimina triloba", "Asparagus Officinalis", "Asperula odorata", "Asphaltum", "Aspidosperma", "Astragalus menziesii", "Atista Indica", "Atista radix", "Atropinum", "Atropinum sulphuricum", "Aurum bromatum", "Aurum Iod", "Aurum metallicum", "Aurum Mur", "Aurum Mur Nat", "Aurum muriaticum kalinatum", "Aurum sulphuratum", "Avena Sativa", "Azadirachta indica", "Bacillinum", "Bacopa monnieri", "Badiaga", "Balsamum Peru", "Baptisia confusa", "Baptisia Tinc", "Barosma crenata", "Baryta acetica", "Baryta Carb", "Baryta Iod", "Baryta Mur", "Belladonna", "Bellis Per", "Benzinum", "Benzinum dinitricum", "Benzoin odoriferum", "Berberine hydrochloricum", "Berberis Aqui", "Berberis Vulg", "Beryllium metallicum", "Beta vulgaris", "Betula alba", "Bismuth Met", "Bismuth oxydatum", "Bismuth subnitricum", "Bixa orellana", "Blatta Ori", "Blumea odorata", "Boldo", "Boletus laricis", "Boletus luridus", "Boletus satanas", "Bombyx processionea", "Borago officinalis", "Borax", "Bovista", "Brassica napus", "Bromium", "Bromus ramosus", "Brucinum", "Bryonia Alb", "Bufo Rana", "Bunias orientalis", "Buxus sempervirens", "Cactus Grand", "Cadmium bromatum", "Cadmium iodatum", "Cadmium metallicum", "Cadmium muriaticum", "Cadmium sulphuratum", "Caesalpinia bonducella", "Cahinca", "Cajuputum", "Caladium Seg", "Calc Acetica", "Calc Ars", "Calc Calcinatum", "Calc Carb", "Calc Fluor", "Calc Hypo phos", "Calc Phos", "Calc Picric", "Calc Sulph", "Calcarea caustica", "Calcarea Iodata", "Calcarea lactica", "Calcarea muriatica", "Calcarea renalis", "Calcarea silicata", "Calendula Off", "Calluna vulgaris", "Calotropis Gig", "Caltha palustris", "Camphora", "Camphora bromata", "Canchalagua", "Cannabis Ind", "Cannabis Sat", "Cantharis", "Capsicum", "Carbo Ani", "Carbo Sulph", "Carbo Vegetabilis", "Carboneum", "Carboneum chloratum", "Carboneum hydrogenisatum", "Carboneum oxygenisatum", "Carcinosinum", "Cardiospermum", "Cardus Mar", "Carduus benedictus", "Carica Papaya", "Carlsbad Aqua", "Carpinus betulus", "Carum carvi", "Carya alba", "Cascara sagrada", "Cascarilla", "Castanea sativa", "Castor Equi", "Caulophylum", "Causticum", "Ceanothus", "Cedron", "Centaurea tagana", "Centaurium umbellatum", "Cephalandra Ind", "Ceratostigma willmottianum", "Cereus bonplandii", "Cereus serpentinus", "Cerium oxalicum", "Cetraria islandica", "Chamomilla", "Chaparro amargoso", "Cheiranthus cheiri", "Chelidonium", "Chelone glabra", "Chenopodii glauci aphis", "Chenopodium anthelminticum", "Chenopodium vulvaria", "Chimaphila maculata", "Chimaphila Umb", "China Ars", "China Off", "China Sulph", "Chininum muriaticum", "Chininum salicylicum", "Chloralum hydratum", "Cholesterinum", "Chromium kali sulphuricum", "Chrysanthemum leucanthemum", "Cicer arietinum", "Cichorium intybus", "Cicuta maculata", "Cicuta Virosa", "Cimex Lectula", "Cimicifuga", "Cina", "Cinchoninum", "Cineraria maritima", "Cinnabaris", "Cinnamomum", "Cistus Can", "Citrus decumana", "Citrus limonum", "Citrus vulgaris", "Clematis Erecta", "Clematis vitalba", "Cobaltum Met", "Cobaltum nitricum", "Cocculus Ind", "Cochlearia officinalis", "Coffea Crud", "Coffea tosta", "Cola", "Colchicinum", "Colchicum", "Coleus aromaticus", "Collinsonia", "Colocynthis", "Colostrum", "Comocladia dentata", "Conchiolinum", "Condurango", "Conium Mac", "Convallaria majalis", "Convovulus arvensis", "Copaiva", "Coptis trifolia", "Corallium Rub", "Corallorhiza odontorhiza", "Coriaria ruscifolia", "Cornus alternifolia", "Cornus circinata", "Cornus Flor", "Cortisone", "Corydalis canadensis", "Coumarinum", "Crataegus Oxy", "Cresolum", "Crocus Sat", "Crotalus Hor", "Croton Tig", "Cubeba Officinalis", "Cucurbita citrullus", "Cucurbita pepo", "Culex musca", "Cuphea petiolata", "Cupressus australis", "Cupressus lawsoniana", "Cuprum aceticum", "Cuprum Ars", "Cuprum iodatum", "Cuprum Met", "Cuprum oxydatum nigrum", "Cuprum Sulph", "Curare", "Curcuma longa", "Cyclamen", "Cydonia vulgaris", "Cynara scolymus", "Cynodon dactylon", "Cyperus rotundus", "Cypripedium pubescens", "Cytisus scoparius", "Daphne indica", "Derris pinnata", "Desmodium gangeticum", "Dichapetalum", "Dictamnus albus", "Digitalinum", "Digitalis Pur", "Digitoxinum", "Dioscorea Vill", "Diphtherinum", "Dolichos Pru", "Doryphora decemlineata", "Drosera", "Duboisia myoporoides", "Dulcamara", "Dysentery Bacillus", "Echinacea", "Echinacea purpurea", "Eel Serum", "Elaeis guineensis", "Embelia officinalis", "Embelia ribes", "Emetinum", "Eosinum natrum", "Epigaea repens", "Epilobium palustre", "Epiphegus virginiana", "Equisetum arvense", "Equisetum Hye", "Erechthites hieracifolia", "Ergotinum", "Erigeron Canadensis", "Erodium cicutarium", "Eryngium aquaticum", "Eryngium maritimum", "Erytharaea centaurium", "Eserinum", "Eucalyptus Globulus", "Euonymus atropurpureus", "Euonymus europaeus", "Eupatorium aromaticum", "Eupatorium Perf", "Eupatorium Purp", "Euphorbia amygdaloides", "Euphorbia Cor", "Euphorbia cyparissias", "Euphorbia hypericifolia", "Euphorbia lathyris", "Euphorbia pilulifera", "Euphorbium officinarum", "Euphrasia", "Eupionum", "Fabiana imbricata", "Fagopyrum", "Fagus sylvatica", "Fel tauri", "Ferr Iodatum", "Ferr Met", "Ferr Phos", "Ferrum aceticum", "Ferrum arsenicicum", "Ferrum bromatum", "Ferrum carbonicum", "Ferrum muriaticum", "Ferrum pernitricum", "Ferrum Picricum", "Ferrum sulphuricum", "Ferrum cyanatum", "Ferula glauca", "Ficus indica", "Ficus religiosa", "Filipendula ulmaria", "Filix Mas", "Fluoricum acidum", "Formica Rufa", "Fragaria vesca", "Franciscea uniflora", "Fraxinus americana", "Fraxinus excelsior", "Fuchsinum", "Fucus Ves", "Galanthus nivalis", "Galega", "Galium Aparine", "Galphimia glauca", "Gambogia", "Gaultheria procumbens", "Gelsemium", "Genista tinctoria", "Gentiana cruciata", "Gentiana Lut", "Gentiana quinqueflora", "Gentianella amarella", "Geranium Mac", "Geum rivale", "Geum urbanum", "Ginkgo Biloba", "Ginseng", "Glechoma hederacea", "Glonoinum", "Glycyrrhiza glabra", "Gnaphalium leontopodium", "Gnaphalium", "Gossypium herbaceum", "Granatum", "Granite", "Graphites", "Gratiola officinalis", "Grindelia Rob", "Guaco", "Guaiacum Off", "Guarea trichilioides", "Guatteria gaumeri", "Gunpowder", "Gymnema Syl", "Gymnocladus canadensis", "Haematoxylon campechianum", "Hamamelis Virg", "Hedeoma", "Hekla Lava", "Helianthemum nummularium", "Helianthus annus", "Heliotropium indicum", "Heliotropium peruvianum", "Helleborus foetidus", "Helleborus Nig", "Helleborus viridis", "Hemidesmus indica", "Hepar Sulph", "Hepatica triloba", "Heracleum sphondylium", "Hippomanes", "Hippozaeninum", "Histaminum hydrochloricum", "Hoang nan", "Hoitzia coccinea", "Holarrhena antidysenterica", "Hottonia palustris", "Humulus lupulus", "Hura brasiliensis", "Hura crepitans", "Hydrangea arborescens", "Hydrastininum muriaticum", "Hydrastis Can", "Hydrocotyle", "Hydrophis cyanocinctus", "Hydrophobinum", "Hydrophyllum virginianum", "Hygrophilla Spin", "Hyoscyamus Nig", "Hypericum", "Iberis amara", "Ichthyolum", "Ignatia Amara", "Ilex aquifolium", "Ilex paraguariensis", "Illicium anisatum", "Impatiens Glandulifera", "Imperatoria ostruthium", "Indigo Tin", "Indium metallicum", "Indolum", "Insulinum", "Inula helenium", "Iodium", "Ipecacuanha", "Iridium metallicum", "Iris florentina", "Iris foetidissima", "Iris Tenax", "Iris Versicolor", "Jaborandi", "Jacaranda caroba", "Jalapa", "Jasminum officinale", "Jatropha curcas", "Jatropha urens", "Jequirity", "Juglans cinerea", "Juncus effusus", "Juniperus communis", "Juniperus virginiana", "Justicia Adh", "Kali aceticum", "Kali Ars", "Kali bichromicum", "Kali Brom", "Kali carbonicum", "Kali causticum", "Kali chloricum", "Kali Cyan", "Kali ferrocyanatum", "Kali Iodatum", "Kali Mur", "Kali nitricum", "Kali oxalicum", "Kali permanganicum", "Kali Phos", "Kali picricum", "Kali silicatum", "Kali Sulph", "Kali tartaricum", "Kalmia Lat", "Karaka", "Karwinskia humboldtiana", "Kino australiensis", "Kousso", "Kreosotum", "Lac Caninum", "Lac Defloratum", "Lac felinum", "Lac vaccinum", "Lachesis", "Lachnanthes Tinc", "Lactuca Virosa", "Lamium album", "Lapis Albus", "Lappa Arctium", "Larix decidua", "Lathyrus Sat", "Laurocerasus", "Lavandula angustifolia", "Ledum Pal", "Lemna Minor", "Leonurus cardiaca", "Lepidium bonariense", "Leptandra Virg", "Leucas aspera", "Levisticum officinale", "Liatris spicata", "Lilium Tig", "Limulus cyclops", "Linum catharticum", "Linum usitatissimum", "Lithium benzoicum", "Lithium bromatum", "Lithium Carb", "Lithium muriaticum", "Lobelia erinus", "Lobelia inflata", "Lobelia purpurescens", "Lobelia syphilitica", "Lolium temulentum", "Lonicera caprifolium", "Lonicera periclymenum", "Lonicera xylosteum", "Lophophytum leandri", "Luffa amara", "Luffa operculata", "Lupulinum", "Lycopersicum esculentum", "Lycopodium", "Lycopus Virg", "Lysimachia nummularia", "Macrotinum", "Mag Carb", "Mag Mur", "Mag Phos", "Magnesia sulphurica", "Magnetis Pol Aust", "Magnolia glauca", "Majeptil", "Malandrinum", "Malaria officinalis", "Mallotus philippinensis", "Malus pumila", "Mancinella", "Mandragora officinarum", "Manganum Acet", "Manganum carbonicum", "Manganum metallicum", "Manganum muriaticum", "Manganum phosphoricum", "Manganum sulphuricum", "Marrubium vulgare", "Matico", "Matthiola graeca", "Medorrhinum", "Melilotus Alb", "Melilotus Off", "Melissa officinalis", "Menispermum canadense", "Mentha Pip", "Mentha pulegium", "Mentha viridis", "Menyanthes trifoliata", "Merc Bijod", "Merc Bin Iod", "Merc Corr", "Merc Cyan", "Merc Dul", "Merc Iod", "Merc Iod Rub", "Merc Proto Iod", "Merc Sulph", "Merc Vivus", "Mercurialis perennis", "Mercurius aceticus", "Mercurius auratus", "Mercurius iodatus flavus", "Mercurius nitrosus", "Mercurius praecipitatus albus", "Mercurius praecipitatus ruber", "Mercurius solubilis", "Mercurius sulphocyanatus", "Methylene blue", "Mezereum", "Millefolium", "Mimosa pudica", "Mimulus guttatus", "Mitchella repens", "Momordica balsamina", "Momordica charantia", "Morbillinum", "Moringa oleifera", "Moschus", "Murex Purp", "Musa sapientum", "Mygale lasiodora", "Myosotis arvensis", "Myrica Cer", "Myristica Sebif", "Myrrha", "Myrtus communis", "Nabalus serpentarius", "Naja Tripud", "Nasturtium aquaticum", "Nat Ars", "Nat Carb", "Nat Mur", "Nat Nit", "Nat Phos", "Nat Sulph", "Natrum fluoratum", "Natrum hypochlorosum", "Natrum lacticum", "Natrum salicylicum", "Natrum silicofluoricum", "Natrum sulphurosum", "Natrum nitrosum", "Negundium Amer", "Nepenthes distillatoria", "Nepeta cataria", "Niccolum Met", "Niccolum sulphuricum", "Nitrogenum oxygenatum", "Nuphar Lut", "Nux Juglans", "Nux Moschata", "Nux Vomica", "Nyctanthes arbortristis", "Nymphaea odorata", "Ocimum canum", "Ocimum sanctum", "Oenanthe crocata", "Oenothera biennis", "Oldenlandia", "Olea europaea", "Oleander", "Oleum animale", "Oleum Jec Asel", "Oleum ricini", "Oleum santali", "Olibanum", "Ononis spinosa", "Onosmodium Virg", "Opium Potencies", "Opuntia vulgaris", "Oreodaphne california", "Origanum Maj", "Origanum vulgare", "Ornithogalum", "Osmium metallicum", "Ostrya virginica", "Ova Tosta", "Ovi gallinae pellicula", "Oxalis acetosella", "Oxydendrum Arb", "Oxytropis lamberti", "Palladium Met", "Paloondo", "Pareira brava", "Parietaria officinalis", "Paeonia Off", "Paronichia illecebrum", "Parthenium", "Passiflora", "Pastinca sativa", "Pencillinum", "Petiveria tetrandra", "Petroleum", "Petroselinum", "Phaseolus nanus", "Phellandrium aquaticum", "Phloridzinum", "Phosphorus", "Physostigma Pur", "Phytolacca Ber", "Phytolacca Dec", "Picrorhiza", "Picrotoxinum", "Pilocarpinum", "Pimenta officinalis", "Pinus lambertiana", "Pinus sylvestris", "Piper methysticum", "Piper nigrum", "Piperazinum", "Piscidia erythrina", "Pituitary Gland", "Pix liquida", "Plantago Maj", "Platanus", "Platina", "Platinum Met", "Plumbago zeylanica", "Plumbum aceticum", "Plumbum chromicum", "Plumbum iodatum", "Plumbum Metallicum", "Podophyllinum", "Podophyllum Pelt", "Polygonum aviculare", "Polygonum punctatum", "Polygonum sagittatum", "Polyporus officinalis", "Polyporus pinicola", "Populous tremuloides", "Populus candicans", "Pothos Foet", "Primula obconica", "Primula veris", "Primula vulgaris", "Prunella vulgaris", "Prunus cerasifera", "Prunus padus", "Prunus Spin", "Prunus virginiana", "Psorinum", "Ptelea trifoliata", "Pulsatilla Nig", "Pulsatilla nuttalliana", "Pyrogenium", "Pyrus americana", "Pyrethrum parthenium", "Quassia amara", "Quercus glandium spiritus", "Quercus robur", "Quillaja saponaria", "Radium Brom", "Ranunculus acris", "Ranunculus Bulb", "Ranunculus ficaria", "Ranunculus glacialis", "Ranunculus repens", "Ranunculus sceleratus", "Raphanus Sat", "Ratanhia", "Rauwolfia serpentina", "Rescue Remedy", "Reserpinum", "Resorcinum", "Rhamnus californica", "Rhamnus cathartica", "Rhamnus frangula", "Rheum", "Rhodium metallicum", "Rhododendron", "Rhus Arom", "Rhus diversiloba", "Rhus Glab", "Rhus Tox", "Rhus Ven", "Ricinus Communis", "Robinia Pseud", "Rock Water", "Rosa canina", "Rosa damascena", "Rosmarinus officinalis", "Rubia tinctorum", "Rumex acetosa", "Rumex Crisp", "Russula foetens", "Ruta Gr", "Sabadilla", "Sabina", "Saccharum lactis", "Saccharum officinale", "Salix alba", "Sabal Serr", "Salix Nigra", "Salix purpurea", "Salolum", "Salvia officinalis", "Sambucus Can", "Sambucus nigra", "Sanguinarinum Nit", "Sanguinaria Can", "Sanicula aqua", "Santoninum", "Saponaria officinalis", "Saponinum", "Sarracenia purpurea", "Sarsaparilla", "Sassafras officinale", "Saussurea lappa", "Scammonium", "Schinus molle", "Scleranthus annus", "Scolopendrium vulgare", "Scrophularia nodosa", "Scutellaria lateriflora", "Secale Corn", "Selenium", "Sempervivum tectorum", "Senecio Aur", "Senecio jacobaea", "Senega", "Senna", "Sepia", "Shucks", "Silica marina", "Silicea", "Sinapis alba", "Sinapis arvensis", "Sinapis nigra", "Sisymbrium officinale", "Skatolum", "Skookum Chuck", "Slag", "Solaninum", "Solanum arrebenta", "Solanum carolinense", "Solanum mammosum", "Solanum nigrum", "Solanum oleraceum", "Solanum tuberosum", "Solanum xanthocarpum", "Solidago Virg", "Sparteinum sulphuricum", "Spigelia Anth", "Spigelia marilandica", "Spiranthes autumnalis", "Spongia Tosta", "Stachys betonica", "Stannum iodatum", "Stannum Met", "Staphysagria", "Stellaria Med", "Stibium metallicum", "Stigmata maidis", "Sticta Pul", "Stillingia sylvatica", "Strontium bromatum", "Strontium carbonicum", "Strontium nitricum", "Strophanthus hispidus", "Strychninum", "Strychninum arsenicicum", "Strychninum nitricum", "Strychninum phosphoricum", "Strychninum sulphuricum", "Sulphonalum", "Sulphur", "Sulphur hydrogenisatum", "Sulphur Iod", "Sumbul", "Swertia chirata", "Symphoric. Rac", "Symphytum", "Syphilinum", "Syzygium jambolanum", "Tabacum", "Tamus communis", "Tanacetum vulgare", "Tanghinia venenifera", "Taraxacum officinale", "Tarentula Cub", "Tarentula Hisp", "Taxus baccata", "Tellurium Met", "Teplitz", "Terebinthina", "Terminalia arjuna", "Testes siccati", "Tetradymite", "Teucrium M.", "Teucrium scorodonia", "Thaspium aureum", "Thea chinensis", "Thiosinaminum", "Thlaspi B.P.", "Thuja lobbi", "Thuja occ", "Thymolum", "Thymus serpyllum", "Thymus vulgaris", "Thyroidinum", "Tilia europaea", "Tinospora cordifolia", "Titanium Met", "Tongo", "Tormentilla", "Torula cerevisiae", "Tradescantia diuretica", "Tribulus Terr", "Trifolium Rep", "Trillium Pend", "Triosteum perfoliatum", "Triticum repens", "Trombidium", "Trychosanthes dioica", "Tuberculinum", "Tuberculinum Bov", "Turnera", "Tussilago farfara", "Tussilago fragrans", "Tussilago petasites", "Tylophora indica", "Ulex europaeus", "Ulmus campestris", "Upas tieute", "Uranium Nit", "Urea Pura", "Uric Acid", "Urtica dioica", "Urtica Uren", "Usnea barbata", "Ustilago maidis", "Uva ursi", "Vaccininum", "Vaccinium myrtillus", "Valeriana", "Vanadium", "Venus mercenaria", "Veratrum Alb", "Veratrum nigrum", "Veratrum Vir", "Verbascum thapsus", "Verbena hastata", "Verbena officinalis", "Vernonia anthelmintica", "Veronica beccabunga", "Vesicaria", "Viburnum Op", "Viburnum prunifolium", "Vinca Minor", "Viola Odo", "Viola tricolor", "Viscum Alb", "Vipera", "Vitex trifoliata", "Vitis vinifera", "Wiesbaden", "Wyethia He", "Xanthoxylum fraxineum", "Xerophyllum asphodeloides", "X-Ray", "Yerba santa", "Yohimbinum", "Yucca filamentosa", "Zincum aceticum", "Zincum bromatum", "Zincum carbonicum", "Zincum cyanatum", "Zincum iodatum", "Zincum Met", "Zincum muriaticum", "Zincum oxydatum", "Zincum phosphoratum", "Zincum picricum", "Zincum sulphuricum", "Zincum valerianicum", "Zingiber officinale"
+        ];
+
+        /* ═══════════════════════════════════════════
+           SECTION C (COMPOUNDS / BM DROPS) — DISABLED FOR NOW
+           Original sectionCData array + Section C UI/PDF code
+           yahan wapas lagana ho to purani file se paste karein.
+           ═══════════════════════════════════════════ */
+
+        // Fill Datalist A & B
+        const dl = document.getElementById('medList');
+        allMedicinesList.sort().forEach(m => {
+            const o = document.createElement('option');
+            o.value = m;
+            dl.appendChild(o);
+        });
+
+        let allMeds = []; // Stores Sec A & B items
+
+        // Handle Section A & B Submit
+        document.getElementById('orderForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const name = document.getElementById('medName').value.trim();
+            const pot = document.getElementById('potency').value;
+            const qty = parseInt(document.getElementById('qty').value);
+            const size = document.getElementById('size').value;
+
+            if (!name) return;
+
+            let cls = pot === 'Q' ? (getMTClass(name) || 'B') : null;
+            const rate = getRate(pot, size, cls);
+            if (!rate) { alert('Rate not available for this combination.'); return; }
+
+            const amount = rate * qty;
+            const id = 'med_' + Date.now();
+
+            allMeds.push({ id, name, potency: pot, mtClass: cls, qty, size, rate, amount });
+            renderTables();
+            updateTotals();
+
+            this.reset();
+            document.getElementById('potency').selectedIndex = 0;
+            document.getElementById('classPill').innerHTML = `<span style="color:var(--text-muted);font-size:12px;">— select Q first —</span>`;
+            document.getElementById('rateBox').style.display = 'none';
+            document.getElementById('medName').focus();
+        });
+
+        function editMed(id) {
+            const m = allMeds.find(x => x.id === id);
+            if (!m) return;
+            document.getElementById('medName').value = m.name;
+            document.getElementById('potency').value = m.potency;
+            onPotencyChange();
+            document.getElementById('size').value = m.size;
+            document.getElementById('qty').value = m.qty;
+            updateClassPill();
+            showRate();
+            allMeds = allMeds.filter(x => x.id !== id);
+            renderTables();
+            updateTotals();
+        }
+
+        function removeMed(id) {
+            allMeds = allMeds.filter(m => m.id !== id);
+            renderTables();
+            updateTotals();
+        }
+
+        function renderTables() {
+            const mt = allMeds.filter(m => m.potency === 'Q').sort((a, b) => a.name.localeCompare(b.name));
+            const pot = allMeds.filter(m => m.potency !== 'Q').sort((a, b) => a.name.localeCompare(b.name));
+
+            function rowsAB(arr) {
+                if (!arr.length) return '<tr class="empty-row"><td colspan="8">Nothing added yet.</td></tr>';
+                return arr.map(m => `
+      <tr>
+        <td style="padding-left:22px;"><span class="med-name">${esc(m.name)}</span>${m.potency === 'Q' ? '<span class="mt-badge">MT</span>' : ''}</td>
+        <td>${m.potency}</td>
+        <td>${m.mtClass ? `<span class="cls-badge">${m.mtClass}</span>` : '—'}</td>
+        <td>${m.qty}</td>
+        <td>${m.size}</td>
+        <td>${m.rate.toLocaleString()}</td>
+        <td style="font-weight:600;">${m.amount.toLocaleString()}</td>
+        <td>
+          <button class="edit-btn" onclick="editMed('${m.id}')">Edit</button>
+          <button class="del-btn" onclick="removeMed('${m.id}')">Remove</button>
+        </td>
+      </tr>`).join('');
+            }
+
+            document.getElementById('mtBody').innerHTML = rowsAB(mt);
+            document.getElementById('potBody').innerHTML = rowsAB(pot);
+        }
+
+        function updateTotals() {
+            const sec = document.getElementById('totalsSection');
+            if (!allMeds.length) { sec.style.display = 'none'; return; }
+            sec.style.display = 'block';
+            const gross = allMeds.reduce((s, m) => s + m.amount, 0);
+            const discount = Math.round(gross * settings.discount / 100);
+            const net = gross - discount;
+            document.getElementById('grossVal').textContent = 'Rs. ' + gross.toLocaleString();
+            document.getElementById('discVal').textContent = '− Rs. ' + discount.toLocaleString();
+            document.getElementById('netVal').textContent = 'Rs. ' + net.toLocaleString();
+        }
+
+        // Rates & Class detection helpers
+        const dilutionRates = {
+            "3X": { "30ml": 280, "60ml": 310, "120ml": 670 }, "6X": { "30ml": 280, "60ml": 310, "120ml": 670 },
+            "12X": { "30ml": 280, "60ml": 310, "120ml": 670 }, "30X": { "30ml": 280, "60ml": 310, "120ml": 670 },
+            "200X": { "30ml": 280, "60ml": 310, "120ml": 670 }, "3": { "30ml": 280, "60ml": 310, "120ml": 670 },
+            "6": { "30ml": 280, "60ml": 310, "120ml": 670 }, "12": { "30ml": 280, "60ml": 310, "120ml": 670 },
+            "30": { "30ml": 280, "60ml": 310, "120ml": 670 }, "200": { "30ml": 280, "60ml": 340, "120ml": 670 },
+            "1000": { "10ml": 160, "30ml": 290, "60ml": 400, "120ml": 690 },
+            "10M": { "10ml": 160, "30ml": 290, "60ml": 400, "120ml": 690 },
+            "50M": { "10ml": 160, "30ml": 290, "60ml": 400, "120ml": 690 },
+            "CM": { "10ml": 160, "30ml": 290, "60ml": 400, "120ml": 690 },
+            "LM": { "10ml": 160, "120ml": 690 }
+        };
+        const mtRates = {
+            "A": { "30ml": 210, "60ml": 290, "120ml": 630, "500ml": 1760 },
+            "B": { "30ml": 260, "60ml": 350, "120ml": 770, "500ml": 2180 },
+            "C": { "30ml": 340, "60ml": 450, "120ml": 990, "500ml": 2750 },
+            "D": { "30ml": 380, "60ml": 510, "120ml": 1120, "500ml": 3140 },
+            "E": { "30ml": 450, "60ml": 630, "120ml": 1380, "500ml": 3930 },
+            "F": { "30ml": 570, "60ml": 800, "120ml": 1760, "500ml": 4900 },
+            "G": { "30ml": 720, "60ml": 980, "120ml": 2170, "500ml": 6140 },
+            "SPL": { "30ml": 750, "60ml": 980, "120ml": 2200, "500ml": 6250 }
+        };
+        const medClassMap = {};
+
+        function getMTClass(name) { return medClassMap[name.trim().toLowerCase()] || null; }
+        function onMedChange() { if (document.getElementById('potency').value === 'Q') updateClassPill(); }
+        function onPotencyChange() { updateClassPill(); showRate(); }
+        function updateClassPill() {
+            const pot = document.getElementById('potency').value;
+            const name = document.getElementById('medName').value;
+            const pill = document.getElementById('classPill');
+            if (pot === 'Q') {
+                const cls = getMTClass(name) || 'B';
+                pill.innerHTML = `<span style="font-size:12px;color:var(--text-muted);">Assumed class:</span> <span class="cls-tag">${cls}</span>`;
+            } else {
+                pill.innerHTML = `<span style="color:var(--text-muted);font-size:12px;">— only for Q (MT) —</span>`;
+            }
+        }
+        function getRate(pot, size, cls) {
+            if (pot === 'Q') return (cls && mtRates[cls]) ? (mtRates[cls][size] || null) : null;
+            return (dilutionRates[pot]) ? (dilutionRates[pot][size] || null) : null;
+        }
+        function showRate() {
+            const pot = document.getElementById('potency').value;
+            const size = document.getElementById('size').value;
+            const name = document.getElementById('medName').value;
+            const box = document.getElementById('rateBox');
+            if (pot && size) {
+                const r = getRate(pot, size, getMTClass(name) || 'B');
+                if (r) { document.getElementById('rateVal').textContent = r.toLocaleString(); box.style.display = 'flex'; }
+                else box.style.display = 'none';
+            } else box.style.display = 'none';
+        }
+
+        // PDF Generation (Sections A & B)
+        function generatePDF() {
+            if (!allMeds.length) { alert('Please add medicines first!'); return; }
+            document.getElementById('loading').classList.add('active');
+
+            const mt = allMeds.filter(m => m.potency === 'Q').sort((a, b) => a.name.localeCompare(b.name));
+            const pot = allMeds.filter(m => m.potency !== 'Q').sort((a, b) => a.name.localeCompare(b.name));
+
+            const gross = allMeds.reduce((s, m) => s + m.amount, 0);
+            const discount = Math.round(gross * settings.discount / 100);
+            const net = gross - discount;
+            const date = new Date().toLocaleDateString('en-GB');
+
+            const thS = `background:${T.pri};color:${T.onPri};border:1px solid ${T.light};padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;`;
+            const tdS = `border:1px solid ${T.border};padding:8px 10px;font-size:13px;`;
+
+            const logoHtml = settings.logo
+                ? `<img src="${settings.logo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.25);flex-shrink:0;">`
+                : `<div style="width:60px;height:60px;border-radius:50%;background:${T.acc};color:${T.pri};font-weight:700;font-size:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${esc(initials())}</div>`;
+
+            function buildRowsAB(arr) {
+                if (!arr.length) return `<tr><td colspan="8" style="${tdS}text-align:center;color:${T.muted};font-style:italic;">No items in this section.</td></tr>`;
+                let rows = arr.map((m, i) => `<tr style="background:${i % 2 === 0 ? T.pale : T.sandLight};">
+      <td style="${tdS}text-align:center;">${i + 1}</td>
+      <td style="${tdS}font-weight:600;color:${T.pri};">${esc(m.name)}</td>
+      <td style="${tdS}text-align:center;">${m.potency}</td>
+      <td style="${tdS}text-align:center;">${m.mtClass || '—'}</td>
+      <td style="${tdS}text-align:center;">${m.qty}</td>
+      <td style="${tdS}text-align:center;">${m.size}</td>
+      <td style="${tdS}text-align:center;">${m.rate.toLocaleString()}</td>
+      <td style="${tdS}text-align:center;font-weight:700;">${m.amount.toLocaleString()}</td>
+    </tr>`).join('');
+                const sub = arr.reduce((s, m) => s + m.amount, 0);
+                rows += `<tr style="background:${T.mid};"><td colspan="7" style="${tdS}text-align:right;color:${T.onPri};font-weight:600;background:${T.mid};">Sub-Total</td><td style="${tdS}text-align:center;color:${T.acc};font-weight:700;background:${T.mid};">Rs. ${sub.toLocaleString()}</td></tr>`;
+                return rows;
+            }
+
+            const html = `
+  <div id="pdf-content" style="background:${T.pale};padding:28px;font-family:'Segoe UI',sans-serif;width:794px;box-sizing:border-box;border:1px solid ${T.border};">
+    <div style="display:flex;margin-bottom:20px;">
+      <div style="background:${T.pri};flex:1;padding:18px 22px;border-radius:8px 0 0 0;display:flex;align-items:center;gap:14px;">
+        ${logoHtml}
+        <div>
+          <div style="font-size:22px;color:${T.onPri};font-weight:700;letter-spacing:1px;">${esc((settings.clinicName || 'Your Clinic Name').toUpperCase())}</div>
+          <div style="font-size:13px;color:${T.sub};margin-top:4px;">${esc(settings.doctorName)}</div>
+        </div>
+      </div>
+      <div style="background:${T.acc};padding:18px 22px;text-align:center;border-radius:0 8px 0 0;min-width:130px;display:flex;flex-direction:column;justify-content:center;">
+        <div style="font-size:10px;color:${T.onAcc};font-weight:700;text-transform:uppercase;letter-spacing:1px;">Party Code</div>
+        <div style="font-size:26px;color:${T.onAcc};font-weight:700;">${esc(settings.partyCode || '—')}</div>
+        <div style="font-size:11px;color:${T.onAcc};margin-top:4px;">Date: ${date}</div>
+      </div>
+    </div>
+
+    <div style="background:${T.mid};color:${T.onPri};text-align:center;padding:9px;font-size:13px;font-weight:700;letter-spacing:2px;margin-bottom:12px;border-radius:4px;">SECTION A — MOTHER TINCTURES (Q)</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+      <thead><tr><th style="${thS}width:5%;">S#</th><th style="${thS}width:35%;text-align:left;">Medicine Name</th><th style="${thS}width:8%;">Pot.</th><th style="${thS}width:8%;">Class</th><th style="${thS}width:7%;">Qty</th><th style="${thS}width:10%;">Size</th><th style="${thS}width:12%;">Rate</th><th style="${thS}width:12%;">Amount</th></tr></thead>
+      <tbody>${buildRowsAB(mt)}</tbody>
+    </table>
+
+    <div style="background:${T.mid};color:${T.onPri};text-align:center;padding:9px;font-size:13px;font-weight:700;letter-spacing:2px;margin-bottom:12px;border-radius:4px;">SECTION B — POTENCIES &amp; DILUTIONS</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:22px;">
+      <thead><tr><th style="${thS}width:5%;">S#</th><th style="${thS}width:35%;text-align:left;">Medicine Name</th><th style="${thS}width:8%;">Pot.</th><th style="${thS}width:8%;">Class</th><th style="${thS}width:7%;">Qty</th><th style="${thS}width:10%;">Size</th><th style="${thS}width:12%;">Rate</th><th style="${thS}width:12%;">Amount</th></tr></thead>
+      <tbody>${buildRowsAB(pot)}</tbody>
+    </table>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      <tr>
+        <td style="padding:8px 14px;font-size:13px;color:${T.textMid};background:${T.sandLight};border:1px solid ${T.border};">Gross Total</td>
+        <td style="padding:8px 14px;font-size:14px;color:${T.pri};font-weight:700;text-align:right;background:${T.sandLight};border:1px solid ${T.border};">Rs. ${gross.toLocaleString()}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 14px;font-size:13px;color:#a32d2d;background:${T.sandLight};border:1px solid ${T.border};">${settings.discount}% Discount</td>
+        <td style="padding:8px 14px;font-size:14px;color:#a32d2d;font-weight:700;text-align:right;background:${T.sandLight};border:1px solid ${T.border};">− Rs. ${discount.toLocaleString()}</td>
+      </tr>
+      <tr style="background:${T.pri};color:${T.onPri};">
+        <td style="padding:12px 14px;font-size:16px;font-weight:700;background:${T.pri};color:${T.onPri};">Net Payable</td>
+        <td style="padding:12px 14px;font-size:20px;font-weight:700;text-align:right;background:${T.pri};color:${T.acc};">Rs. ${net.toLocaleString()}</td>
+      </tr>
+    </table>
+  </div>`;
+
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'absolute';
+            wrapper.style.left = '-9999px';
+            wrapper.innerHTML = html;
+            document.body.appendChild(wrapper);
+
+            html2canvas(wrapper.querySelector('#pdf-content'), { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                const safeName = (settings.clinicName || 'Clinic').replace(/[^\w\-]+/g, '_');
+                pdf.save(`Order_Form_${safeName}_${date.replace(/\//g, '-')}.pdf`);
+
+                document.body.removeChild(wrapper);
+                document.getElementById('loading').classList.remove('active');
+            }).catch(() => {
+                document.body.removeChild(wrapper);
+                document.getElementById('loading').classList.remove('active');
+                alert('Error generating PDF.');
+            });
+        }
+
+        // ── INIT ──
+        loadSettings();
+        applySettings();
+        if (!localStorage.getItem(SETTINGS_KEY)) openSettings(); // first run: ask for clinic details
+    </script>
+</body>
+
+</html>
